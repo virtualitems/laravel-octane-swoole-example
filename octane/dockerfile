@@ -1,0 +1,53 @@
+FROM debian:latest
+
+RUN apt update && apt install -y \
+    build-essential \
+    composer \
+    git \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    nodejs \
+    php \
+    php-bcmath \
+    php-cli \
+    php-ctype \
+    php-curl \
+    php-dev \
+    php-fileinfo \
+    php-json \
+    php-mbstring \
+    php-pdo \
+    php-pear \
+    php-sqlite3 \
+    php-tokenizer \
+    php-xml \
+    php-zip \
+    vim
+
+# Swoole
+RUN pecl install swoole \
+    && echo "extension=swoole.so" > /etc/php/$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')/mods-available/swoole.ini \
+    && phpenmod swoole
+
+COPY ./octane/.vimrc /root/.vimrc
+
+WORKDIR /opt
+
+RUN composer create-project --no-interaction laravel/laravel website
+
+WORKDIR /opt/website
+
+RUN chmod -R 775 storage bootstrap/cache \
+    && cp .env.example .env \
+    && php artisan key:generate --force
+
+RUN composer require laravel/octane --no-interaction \
+    && php artisan octane:install --server=swoole --force
+
+EXPOSE 80
+
+RUN rm ./routes/web.php
+
+COPY ./octane/web.php ./routes/web.php
+
+CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=80"]

@@ -1,0 +1,69 @@
+services:
+  octane:
+    image: octane:latest
+    container_name: octane
+
+    build:
+      context: .
+      dockerfile: ./octane/dockerfile
+
+    pull_policy: build
+
+    expose:
+      - "80"
+
+    restart: unless-stopped
+
+    networks:
+      - project-net
+
+    logging:
+      driver: journald
+      options:
+        tag: "{{.Name}}"
+
+    # env_file:
+    #   - .env                    # variables externas opcionales
+
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost/health"]  # ajusta endpoint
+    #   interval: 30s
+    #   timeout: 5s
+    #   retries: 3
+    #   start_period: 10s
+
+    # volumes:
+    #   - app_data:/var/lib/app   # ajusta ruta interna
+
+  nginx:
+    image: nginx-proxy:latest
+    container_name: nginx-proxy
+
+    build:
+      context: .
+      dockerfile: ./nginx/dockerfile
+
+    pull_policy: build
+
+    ports:
+      - "8000:80"
+
+    depends_on:
+      - octane
+
+    restart: unless-stopped
+
+    networks:
+      - project-net
+
+    logging:
+      driver: journald
+      options:
+        tag: "{{.Name}}"
+
+networks:
+  project-net:
+    driver: bridge
+
+# volumes:
+#   app_data:
