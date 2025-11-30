@@ -24,8 +24,13 @@ RUN apt update && apt install -y \
     php-zip \
     vim
 
+# Install PIE (PHP Installer for Extensions)
+RUN php -r "copy('https://github.com/php/pie/releases/latest/download/pie.phar', 'pie.phar');" \
+    && chmod +x pie.phar \
+    && mv pie.phar /usr/local/bin/pie
+
 # Swoole
-RUN pecl install swoole \
+RUN pie install swoole/swoole --with-php-config=$(which php-config) \
     && echo "extension=swoole.so" > /etc/php/$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')/mods-available/swoole.ini \
     && phpenmod swoole
 
